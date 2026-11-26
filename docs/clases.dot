@@ -1,0 +1,35 @@
+digraph G {
+  rankdir=BT; fontname="Times New Roman"; nodesep=0.35; ranksep=0.7;
+  node [shape=record, fontname="Times New Roman", fontsize=11, style=filled, fillcolor="#ffffff"];
+  edge [fontname="Times New Roman", fontsize=10];
+
+  ServicioPedidos [label="{ServicioPedidos|+ nuevoPedido()\l+ registrar(Pedido)\l+ avanzar(String)\l}", fillcolor="#eeeeee"];
+  Pedido [label="{Pedido|+ builder()\l+ suscribir(ObservadorPedido)\l+ cambiarEstado(EstadoPedido)\l+ total()\l}", fillcolor="#dbe8f7"];
+  Builder [label="{Pedido.Builder|+ cliente()\l+ agregar()\l+ direccion()\l+ cupon()\l+ build()\l}", fillcolor="#dbe8f7"];
+
+  Obs [label="{«interface»\nObservadorPedido|+ actualizar(EventoPedido)\l}", fillcolor="#e3f1df"];
+  N [label="{NotificadorCliente}", fillcolor="#e3f1df"];
+  C [label="{PantallaCocina}", fillcolor="#e3f1df"];
+  A [label="{AsignadorRepartidor}", fillcolor="#e3f1df"];
+  R [label="{ReporteVentas}", fillcolor="#e3f1df"];
+
+  Cot [label="{Cotizador|+ cotizar(Pedido)\l}", fillcolor="#fbe9d0"];
+  ED [label="{«interface»\nEstrategiaDescuento|+ calcular(Pedido)\l}", fillcolor="#fbe9d0"];
+  EE [label="{«interface»\nEstrategiaEnvio|+ calcular(Pedido)\l}", fillcolor="#fbe9d0"];
+  D1 [label="{DescuentoPorcentaje}", fillcolor="#fbe9d0"];
+  D2 [label="{DescuentoMontoFijo}", fillcolor="#fbe9d0"];
+  D3 [label="{DescuentoPorVolumen}", fillcolor="#fbe9d0"];
+  E1 [label="{EnvioTarifaPlana}", fillcolor="#fbe9d0"];
+  E2 [label="{EnvioPorZona}", fillcolor="#fbe9d0"];
+  E3 [label="{EnvioGratisDesdeMonto}", fillcolor="#fbe9d0"];
+
+  N -> Obs [arrowhead=empty, style=dashed]; C -> Obs [arrowhead=empty, style=dashed];
+  A -> Obs [arrowhead=empty, style=dashed]; R -> Obs [arrowhead=empty, style=dashed];
+  D1 -> ED [arrowhead=empty, style=dashed]; D2 -> ED [arrowhead=empty, style=dashed]; D3 -> ED [arrowhead=empty, style=dashed];
+  E1 -> EE [arrowhead=empty, style=dashed]; E2 -> EE [arrowhead=empty, style=dashed]; E3 -> EE [arrowhead=empty, style=dashed];
+  Pedido -> Obs [arrowhead=odiamond, label=" notifica"];
+  Builder -> Pedido [arrowhead=open, style=dashed, label=" crea"];
+  Cot -> ED [arrowhead=odiamond]; Cot -> EE [arrowhead=odiamond];
+  ServicioPedidos -> Cot [arrowhead=open, style=dashed, label=" usa"];
+  ServicioPedidos -> Pedido [arrowhead=open, style=dashed, label=" registra"];
+}
