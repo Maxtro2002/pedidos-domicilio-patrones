@@ -1,5 +1,5 @@
 digraph G {
-  rankdir=BT; fontname="Times New Roman"; nodesep=0.35; ranksep=0.7;
+  rankdir=RL; fontname="Times New Roman"; nodesep=0.25; ranksep=0.9;
   node [shape=record, fontname="Times New Roman", fontsize=11, style=filled, fillcolor="#ffffff"];
   edge [fontname="Times New Roman", fontsize=10];
 
