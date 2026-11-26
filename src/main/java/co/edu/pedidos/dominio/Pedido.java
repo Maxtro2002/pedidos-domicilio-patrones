@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Pedido de un cliente.
@@ -16,9 +19,13 @@ import java.util.UUID;
  * se crea con el patrón Builder y no con un constructor largo. El constructor es privado y
  * {@link Builder#build()} valida todas las reglas antes de entregar el objeto, así que no existe
  * un pedido a medias dentro del sistema.</p>
+ *
+ * <p>Además es el sujeto del patrón Observer: guarda una lista de {@link ObservadorPedido} y les
+ * avisa cada vez que cambia de estado.</p>
  */
 public final class Pedido {
 
+    private static final Logger LOG = Logger.getLogger(Pedido.class.getName());
     private static final int MAX_NOTAS = 200;
     private static final int MAX_UNIDADES_POR_PRODUCTO = 20;
 
@@ -36,6 +43,8 @@ public final class Pedido {
     private long descuento;
     private long costoEnvio;
     private boolean totalesFijados;
+    private boolean confirmado;
+    private final List<ObservadorPedido> observadores = new CopyOnWriteArrayList<>();
 
     private Pedido(Builder b) {
         this.id = b.id;
@@ -126,6 +135,71 @@ public final class Pedido {
         this.descuento = descuento;
         this.costoEnvio = costoEnvio;
         this.totalesFijados = true;
+    }
+
+    // ------------------------------------------------------------------
+    // Observer: el pedido es el sujeto
+    // ------------------------------------------------------------------
+
+    public void suscribir(ObservadorPedido observador) {
+        if (observador == null) {
+            throw new IllegalArgumentException("El observador no puede ser nulo");
+        }
+        observadores.add(observador);
+    }
+
+    public void cancelarSuscripcion(ObservadorPedido observador) {
+        observadores.remove(observador);
+    }
+
+    /** Registra el pedido en el sistema y lo anuncia a los observadores como RECIBIDO. */
+    public void confirmar() {
+        if (confirmado) {
+            throw new IllegalStateException("El pedido " + id + " ya fue confirmado");
+        }
+        if (!totalesFijados) {
+            throw new IllegalStateException("Hay que fijar los totales antes de confirmar el pedido " + id);
+        }
+        confirmado = true;
+        notificar(new EventoPedido(this, null, estado, Instant.now()));
+    }
+
+    /**
+     * Cambia el estado si la transición está permitida y avisa a los observadores.
+     *
+     * @throws IllegalStateException si el cambio no es válido para el estado o el tipo de entrega
+     */
+    public void cambiarEstado(EstadoPedido nuevo) {
+        if (!confirmado) {
+            throw new IllegalStateException("El pedido " + id + " todavía no fue confirmado");
+        }
+        if (!estado.puedePasarA(nuevo)) {
+            throw new IllegalStateException("No se puede pasar de " + estado + " a " + nuevo);
+        }
+        if (nuevo == EstadoPedido.EN_CAMINO && tipoEntrega != TipoEntrega.DOMICILIO) {
+            throw new IllegalStateException("Solo los pedidos a domicilio pasan a EN_CAMINO");
+        }
+        if (nuevo == EstadoPedido.ENTREGADO && estado == EstadoPedido.LISTO
+                && tipoEntrega == TipoEntrega.DOMICILIO) {
+            throw new IllegalStateException("Un pedido a domicilio debe pasar por EN_CAMINO antes de entregarse");
+        }
+        EstadoPedido anterior = estado;
+        estado = nuevo;
+        notificar(new EventoPedido(this, anterior, nuevo, Instant.now()));
+    }
+
+    /**
+     * Recorre una copia de la lista, así un observador puede darse de baja mientras recibe el aviso.
+     * Si un observador falla, se registra el error y los demás siguen recibiendo el evento.
+     */
+    private void notificar(EventoPedido evento) {
+        for (ObservadorPedido observador : observadores) {
+            try {
+                observador.actualizar(evento);
+            } catch (RuntimeException e) {
+                LOG.log(Level.WARNING, "Falló un observador del pedido " + id, e);
+            }
+        }
     }
 
     @Override
