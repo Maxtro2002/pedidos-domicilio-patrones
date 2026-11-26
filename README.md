@@ -101,7 +101,7 @@ classDiagram
 1. Descargar el proyecto:
 
    ```bash
-   git clone <URL-del-repositorio>
+   git clone https://github.com/Maxtro2002/pedidos-domicilio-patrones.git
    cd pedidos-domicilio-patrones
    ```
 
